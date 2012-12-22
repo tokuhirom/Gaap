@@ -108,6 +108,9 @@ module Gaap
     end
 
     class Request < Rack::Request
+        def is_post_request
+            return request_method() == 'POST'
+        end
     end
 
     class Response < Rack::Response
