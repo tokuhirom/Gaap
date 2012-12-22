@@ -25,7 +25,7 @@ class Gaap::Handler
     end
 end
 
-class Gaap::Web
+class Gaap::Dispatcher
     def initialize(env)
         @request = create_request(env)
     end
@@ -34,14 +34,22 @@ class Gaap::Web
     alias :req :request
 
     def create_request(env)
-        Gaap::Web::Request.new(env)
+        Gaap::Request.new(env)
     end
 
-    def render(filename, params)
-        src = File.read(filename)
-        Erubis::Eruby.new(src)
-        html = eruby.result(src)
-        return create_response([html], {'Content-Type' => 'text/html; charset=utf-8'}, 200)
+    def view_directory
+        'view'
+    end
+
+    def render(filename, params={})
+        src = File.read(File.join(view_directory, filename))
+        eruby = Erubis::Eruby.new(src)
+        html = eruby.result(params)
+        return create_response(
+            [html],
+            200,
+            {'Content-Type' => 'text/html; charset=utf-8'}
+        )
     end
 
     def dispatch
@@ -52,7 +60,7 @@ class Gaap::Web
             if dest[:http_method] && !dest[:http_method].any? {|method| method==req.request_method }
                 return res_405()
             end
-            dest[:dest].(self)
+            dest[:dest_class].new(self, args).send(dest[:dest_method])
         else
             return res_404()
         end
@@ -63,7 +71,7 @@ class Gaap::Web
     end
 
     def create_response(*args)
-        Gaap::Web::Response.new(*args)
+        Gaap::Response.new(*args)
     end
 
     def res_404
@@ -79,17 +87,38 @@ class Gaap::Web
     end
 end
 
-class Gaap::Web::Request < Rack::Request
+class Gaap::Controller
+    def initialize(c, args)
+        @c    = c
+        @args = args
+    end
+
+    attr_reader :c
+    attr_reader :args
+
+    %w(
+        create_response
+        create_request
+        render_json
+        render
+        res_404
+        res_405
+    ).each do |method|
+        define_method(method) do |*args|
+            @c.send(method, *args)
+        end
+    end
 end
 
-class Gaap::Web::Response < Rack::Response
+class Gaap::Request < Rack::Request
+end
+
+class Gaap::Response < Rack::Response
 end
 
 class Gaap::Router
-    def initialize(base, &block)
-        @base = base
+    def initialize(&block)
         @router = Router.new()
-        @cache = {}
         self.instance_eval &block
     end
 
@@ -106,12 +135,11 @@ class Gaap::Router
     end
 
     def connect(path, dest_class, dest_method, methods=nil)
-        dest = (@cache[dest_class] ||= dest_class.new())
         @router.register(path, {
-            :dest        => dest.method(dest_method),
+            :dest_class  => dest_class,
+            :dest_method => dest_method,
             :http_method => methods,
         })
     end
 end
 
-# TODO: template engine

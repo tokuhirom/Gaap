@@ -3,33 +3,41 @@ require 'minitest/unit'
 require 'minitest/autorun'
 
 module MyApp
-    class Web < Gaap::Web; end
-    module Web::C; end
+    class C < Gaap::Controller
+    end
 
-    class Web::C::Root
-        def index(c)
-            c.create_response(['OK'], 200, {})
+    class C::Root < C
+        def index
+            create_response(['OK'], 200, {})
         end
-        def json(c)
-            c.render_json({:x => 'y'})
+        def json
+            render_json({:x => 'y'})
         end
-        def create(c)
-            c.render_json({:p => 'z'})
+        def create
+            render_json({:p => 'z'})
         end
     end
 
-    class Web::C::Foo
-        def index(c)
-            c.create_response(['hoge'])
+    class C::Foo < C
+        def index
+            create_response(['hoge'])
         end
     end
 
-    class Web < Gaap::Web
-        @@router = Gaap::Router.new('MyApp::Web') {
-            get  '/',       Web::C::Root, :index
-            get  '/json',   Web::C::Root, :json
-            get  '/foo/',   Web::C::Foo,  :index
-            post '/create', Web::C::Root, :create
+    class C::Tmpl < C
+        def index
+            render('index.erb', {
+            })
+        end
+    end
+
+    class Dispatcher < Gaap::Dispatcher
+        @@router = Gaap::Router.new {
+            get  '/',       C::Root, :index
+            get  '/json',   C::Root, :json
+            get  '/foo/',   C::Foo,  :index
+            post '/create', C::Root, :create
+            get  '/tmpl/',  C::Tmpl, :index
         }
         def router
             @@router
@@ -39,7 +47,7 @@ end
 
 class TestMeme < MiniTest::Unit::TestCase
     def setup
-        @handler = Gaap::Handler.new(MyApp::Web)
+        @handler = Gaap::Handler.new(MyApp::Dispatcher)
     end
 
     def test_root
@@ -71,11 +79,17 @@ class TestMeme < MiniTest::Unit::TestCase
         assert_equal res[0], 200
         assert_equal res[2].body, ['{"p":"z"}']
     end
+
     def test_create_405
         res = @handler.call({'PATH_INFO' => '/create', 'REQUEST_METHOD' => 'GET'})
         assert_equal res[0], 405
         assert_equal res[2].body, ['Method Not Allowed']
     end
+
+    def test_tmpl
+        res = @handler.call({'PATH_INFO' => '/tmpl/', 'REQUEST_METHOD' => 'GET'})
+        assert_equal res[0], 200
+        assert_equal res[2].body, ["XXX 5\n"]
+    end
 end
 
-__END__
