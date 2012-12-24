@@ -1,5 +1,4 @@
-gem 'erubis'
-gem 'rack'
+source 'https://rubygems.org'
 
-# for testing
-gem 'rspec'
+# Specify your gem's dependencies in Gaap.gemspec
+gemspec

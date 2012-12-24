@@ -1,8 +1,8 @@
-require './gaap.rb'
+require 'Gaap'
 require 'minitest/unit'
 require 'minitest/autorun'
 
-module MyApp
+module MyApp2
     class C < Gaap::Controller
     end
 
@@ -42,12 +42,16 @@ module MyApp
         def router
             @@router
         end
+
+        def view_directory
+            'spec/view/'
+        end
     end
 end
 
 class TestMeme < MiniTest::Unit::TestCase
     def setup
-        @handler = Gaap::Handler.new(MyApp::Dispatcher)
+        @handler = Gaap::Handler.new(MyApp2::Dispatcher)
     end
 
     def test_root

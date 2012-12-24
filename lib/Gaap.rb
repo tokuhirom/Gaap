@@ -1,7 +1,9 @@
+require "Gaap/version"
+
 require 'rack'
 require 'json'
 require 'erubis'
-require './router'
+require 'router_simple'
 
 module Gaap
     class Handler
@@ -50,14 +52,12 @@ module Gaap
         end
 
         def dispatch
-            dest, args = self.router().match(req.path_info)
+            dest, args, method_not_allowed = self.router().match(req.request_method, req.path_info)
 
             if dest
-                # Method not allowed
-                if dest[:http_method] && !dest[:http_method].any? {|method| method==req.request_method }
-                    return res_405()
-                end
                 dest[:dest_class].new(self, args).send(dest[:dest_method])
+            elsif method_not_allowed
+                return res_405()
             else
                 return res_404()
             end
@@ -118,24 +118,24 @@ module Gaap
 
     class Router
         def initialize(&block)
-            @router = ::Router.new()
+            @router = RouterSimple::Router.new()
             self.instance_eval &block
         end
 
-        def match(path_info)
-            @router.match(path_info)
+        def match(http_method, path_info)
+            @router.match(http_method, path_info)
         end
 
         def get(path, dest_class, dest_method)
-            connect(path, dest_class, dest_method, ['GET', 'HEAD'])
+            connect(['GET', 'HEAD'], path, dest_class, dest_method)
         end
 
         def post(path, dest_class, dest_method)
-            connect(path, dest_class, dest_method, ['POST'])
+            connect(['POST'], path, dest_class, dest_method)
         end
 
-        def connect(path, dest_class, dest_method, methods=nil)
-            @router.register(path, {
+        def connect(http_method, path, dest_class, dest_method)
+            @router.register(http_method, path, {
                 :dest_class  => dest_class,
                 :dest_method => dest_method,
                 :http_method => methods,

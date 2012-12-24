@@ -1,4 +1,4 @@
-require './gaap.rb'
+require 'Gaap'
 require 'minitest/unit'
 require 'minitest/autorun'
 
@@ -21,8 +21,8 @@ class TestRouter < MiniTest::Unit::TestCase
             get  '/foo/',   MyApp::C::Foo,  :index
             post '/create', MyApp::C::Root, :create
         }
-        assert router.match('/')
-        assert router.match('/json')
-        assert router.match('/foo/')
+        assert router.match('GET', '/')
+        assert router.match('GET', '/json')
+        assert router.match('GET', '/foo/')
     end
 end
