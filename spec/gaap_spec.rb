@@ -1,4 +1,4 @@
-require 'Gaap'
+require 'gaap'
 require 'minitest/unit'
 require 'minitest/autorun'
 
