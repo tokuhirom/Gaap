@@ -25,10 +25,6 @@ module Gaap
 
         attr_accessor :args
 
-        def match(*args)
-          @router.match(*args)
-        end
-
         def get(path, &block)
           @router.register(['GET', 'HEAD'], path, block)
         end
