@@ -18,6 +18,10 @@ module MyApp3
         c.res_404()
       when '/render'
         c.render('index.erb', binding())
+      when '/redirect_relative'
+        c.redirect('/foo')
+      when '/redirect_absolute'
+        c.redirect('http://mixi.jp/home.pl')
       else
         throw "Bad."
       end
@@ -49,6 +53,18 @@ class TestDispatcher < MiniTest::Unit::TestCase
     assert_equal res[0], 200
     assert_equal res[1]['Content-Type'], 'text/html; charset=utf-8'
     assert_equal res[2].body, ["XXX 5\n"]
+  end
+
+  def test_redirect_relattive
+    res = @handler.call({'PATH_INFO' => '/redirect_relative', 'REQUEST_METHOD' => 'GET', 'rack.url_scheme' => 'http', 'HTTP_HOST' => '127.0.0.1', 'SERVER_PORT' => 80})
+    assert_equal res[0], 302
+    assert_equal res[1]['Location'], "http://127.0.0.1/foo"
+  end
+
+  def test_redirect_absolute
+    res = @handler.call({'PATH_INFO' => '/redirect_absolute', 'REQUEST_METHOD' => 'GET', 'rack.url_scheme' => 'http', 'HTTP_HOST' => '127.0.0.1', 'SERVER_PORT' => 80})
+    assert_equal res[0], 302
+    assert_equal res[1]['Location'], "http://mixi.jp/home.pl"
   end
 end
 

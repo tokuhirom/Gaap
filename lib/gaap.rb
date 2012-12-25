@@ -4,6 +4,7 @@ require 'rack'
 require 'json'
 require 'erubis'
 require 'router_simple'
+require 'uri'
 
 # Gaap - Yet another web application framework
 module Gaap
@@ -80,6 +81,12 @@ module Gaap
         200,
         {'Content-Type' => html_content_type()}
       )
+    end
+
+    def redirect(url)
+      res = create_response()
+      res.redirect(URI.join(request.url, url).to_s)
+      return res
     end
 
     # Getter for router object.
