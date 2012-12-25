@@ -31,14 +31,7 @@ module MyApp2
     end
   end
 
-  class Dispatcher < Gaap::Dispatcher
-    @@router = Gaap::Router.new {
-      get  '/',       C::Root, :index
-      get  '/json',   C::Root, :json
-      get  '/foo/',   C::Foo,  :index
-      post '/create', C::Root, :create
-      get  '/tmpl/',  C::Tmpl, :index
-    }
+  class Context < Gaap::Context
     def router
       @@router
     end
@@ -47,11 +40,22 @@ module MyApp2
       'spec/view/'
     end
   end
+
+  @@dispatcher = Gaap::Dispatcher.new {
+    get  '/',       C::Root, :index
+    get  '/json',   C::Root, :json
+    get  '/foo/',   C::Foo,  :index
+    post '/create', C::Root, :create
+    get  '/tmpl/',  C::Tmpl, :index
+  }
+  def self.dispatcher
+    @@dispatcher
+  end
 end
 
 class TestMeme < MiniTest::Unit::TestCase
   def setup
-    @handler = Gaap::Handler.new(MyApp2::Dispatcher)
+    @handler = Gaap::Handler.new(MyApp2::Context, MyApp2.dispatcher)
   end
 
   def test_root

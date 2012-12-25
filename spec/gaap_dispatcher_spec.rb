@@ -3,33 +3,31 @@ require 'minitest/unit'
 require 'minitest/autorun'
 
 module MyApp3
-  class Dispatcher < Gaap::Dispatcher
-    def router
-      @@router
+  class Context < Gaap::Context
+    def view_directory
+      'spec/view/'
     end
+  end
 
-    def dispatch
-      case req.path_info
+  class Dispatcher
+    def dispatch(c)
+      case c.req.path_info
       when '/res_405'
-        res_405()
+        c.res_405()
       when '/res_404'
-        res_404()
+        c.res_404()
       when '/render'
-        render('index.erb', binding())
+        c.render('index.erb', binding())
       else
         throw "Bad."
       end
-    end
-
-    def view_directory
-      'spec/view/'
     end
   end
 end
 
 class TestDispatcher < MiniTest::Unit::TestCase
   def setup
-    @handler = Gaap::Handler.new(MyApp3::Dispatcher)
+    @handler = Gaap::Handler.new(MyApp3::Context, MyApp3::Dispatcher.new())
   end
 
   def test_res_405

@@ -13,9 +13,9 @@ class MyApp::C::Foo
   def index; end
 end
 
-class TestRouter < MiniTest::Unit::TestCase
+class TestDispatcher3 < MiniTest::Unit::TestCase
   def test_router
-    router = Gaap::Router.new {
+    router = Gaap::Dispatcher.new {
       get  '/',       MyApp::C::Root, :index
       get  '/json',   MyApp::C::Root, :json
       get  '/foo/',   MyApp::C::Foo,  :index

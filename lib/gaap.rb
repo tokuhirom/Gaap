@@ -10,13 +10,14 @@ module Gaap
   # Handler class for rack
   class Handler
     # @param [Gaap::Dispatcher] dispatcher_class Dispatcher class object
-    def initialize(dispatcher_class)
-      @dispatcher_class = dispatcher_class
+    def initialize(context_class, dispatcher)
+      @context_class    = context_class
+      @dispatcher = dispatcher
     end
 
     def call(env)
-      app = @dispatcher_class.new(env)
-      res = app.dispatch()
+      app = @context_class.new(env)
+      res = @dispatcher.dispatch(app)
       if res.kind_of?(Rack::Response)
         return res.finish()
       elsif res.instance_of?(Array)
@@ -27,8 +28,8 @@ module Gaap
     end
   end
 
-  # Dispatcher class for Gaap
-  class Dispatcher
+  # Context class for Gaap
+  class Context
     # @param env Rack's env
     def initialize(env)
       @request = create_request(env)
@@ -81,22 +82,6 @@ module Gaap
       )
     end
 
-    # Dispatch request
-    # You can overwrite this method in your dispatcher class.
-    #
-    # @return Response object
-    def dispatch
-      dest, args, method_not_allowed = self.router().match(req.request_method, req.path_info)
-
-      if dest
-        dest[:dest_class].new(self, args).send(dest[:dest_method])
-      elsif method_not_allowed
-        return res_405()
-      else
-        return res_404()
-      end
-    end
-
     # Getter for router object.
     # You need to implement this method in your dispatcher class.
     #
@@ -139,12 +124,12 @@ module Gaap
   class Controller
     # @param [Gaap::Dispatcher] dispatcher instance of dispatcher
     # @param [Hash]             args       captured arguments by router
-    def initialize(dispatcher, args)
-      @dispatcher = dispatcher
+    def initialize(context, args)
+      @context = context
       @args       = args
     end
 
-    attr_reader :dispatcher
+    attr_reader :context
     attr_reader :args
 
     # delegate methods
@@ -157,7 +142,7 @@ module Gaap
           res_405
     ).each do |method|
       define_method(method) do |*args|
-        @dispatcher.send(method, *args)
+        @context.send(method, *args)
       end
     end
   end
@@ -173,8 +158,7 @@ module Gaap
   class Response < Rack::Response
   end
 
-  # Router class.
-  class Router
+  class Dispatcher
     # This method takes block.
     #
     # router = Gaap::Router.new {
@@ -185,6 +169,23 @@ module Gaap
       @router = RouterSimple::Router.new()
       self.instance_eval &block
     end
+
+    # Dispatch request
+    # You can overwrite this method in your dispatcher class.
+    #
+    # @return Response object
+    def dispatch(context)
+      dest, args, method_not_allowed = self.match(context.req.request_method, context.req.path_info)
+
+      if dest
+        dest[:dest_class].new(context, args).send(dest[:dest_method])
+      elsif method_not_allowed
+        return context.res_405()
+      else
+        return context.res_404()
+      end
+    end
+
 
     # Match to route.
     #

@@ -5,10 +5,25 @@ require 'gaap'
 module Gaap
   module Lite
     def self.app(&block)
-      router_class = Class.new do
+      dispatcher_class = Class.new do
         def initialize
           @router = RouterSimple::Router.new
         end
+
+        def dispatch(c)
+          dest, args, method_not_allowed = @router.match(c.req.request_method, c.req.path_info)
+
+          if dest
+            controller = Gaap::Controller.new(c, args) 
+            return controller.instance_eval &dest
+          elsif method_not_allowed
+            return c.res_405()
+          else
+            return c.res_404()
+          end
+        end
+
+        attr_accessor :args
 
         def match(*args)
           @router.match(*args)
@@ -26,34 +41,10 @@ module Gaap
           @router.register(nil, path, &block)
         end
       end
-      router = router_class.new()
-      dispatcher_class = Class.new(Gaap::Dispatcher) do
-        def self.router=(router)
-          @@router = router
-        end
 
-        def initialize(env)
-          super(env)
-        end
-
-        attr_accessor :args
-
-        def dispatch
-          dest, args, method_not_allowed = @@router.match(req.request_method, req.path_info)
-
-          if dest
-            @args = args
-            return self.instance_eval &dest
-          elsif method_not_allowed
-            return res_405()
-          else
-            return res_404()
-          end
-        end
-      end
-      router.instance_eval &block
-      dispatcher_class.router = router
-      return Gaap::Handler.new(dispatcher_class)
+      dispatcher = dispatcher_class.new()
+      dispatcher.instance_eval &block
+      return Gaap::Handler.new(Gaap::Context, dispatcher)
     end
   end
 end
