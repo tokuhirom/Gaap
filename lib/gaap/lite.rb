@@ -2,6 +2,30 @@ require 'router_simple'
 require 'rack'
 require 'gaap'
 
+=begin
+
+Sample code is here.
+
+  require 'gaap/lite'
+  require 'rack/protection'
+
+  use Rack::Session::Cookie
+  use Rack::Protection
+
+  use Gaap::Lite.app do
+    context_class.class_eval do
+      def view_directory
+        'view/'
+      end
+    end
+
+    get '/' do
+      render('index.erb', {})
+    end
+  end
+
+=end
+
 module Gaap
   module Lite
     class Dispatcher
@@ -66,5 +90,3 @@ module Gaap
   end
 end
 
-
-# enable session by default

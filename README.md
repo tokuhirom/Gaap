@@ -1,6 +1,12 @@
 # Gaap
 
-TODO: Write a gem description
+Gaap is a *straightforward* web application framework for Ruby.
+
+## Features
+
+    * Easy to debug
+    * Easy to hack
+    * Easy to write
 
 ## Installation
 
@@ -18,7 +24,66 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### Gaap
+
+You can write your application class as following:
+
+    require 'gaap'
+
+    module MyApp
+        class C; end
+
+        class C::Root
+            def index
+                render('index.erb', {})
+            end
+        end
+
+        @@dispatcher = Gaap::Dispatcher.new do
+            get '/', C::Root, :index
+        end
+
+        class Context < Gaap::Context
+        end
+
+        def handler
+            Gaap::Handler.new(Context, @@dispatcher)
+        end
+    end
+
+And you config.ru is:
+
+    require 'myapp'
+
+    run MyApp.handler
+
+### Gaap::Lite
+
+You can write your app.ru as following:
+
+  require 'gaap/lite'
+  require 'rack/protection'
+
+  use Rack::Session::Cookie
+  use Rack::Protection
+
+  use Gaap::Lite.app do
+    context_class.class_eval do
+      def view_directory
+        'view/'
+      end
+    end
+
+    get '/' do
+      render('index.erb', {})
+    end
+  end
+
+## FAQ
+
+### How do you use file stored session?
+
+Use [rack-session-file](https://github.com/dayflower/rack-session-file)
 
 ## Contributing
 
