@@ -1,0 +1,4 @@
+Gaap::Dispatcher#redirect
+use Rack::Protection by default
+better security for json
+

@@ -29,6 +29,8 @@ module Gaap
 
     # Dispatcher class for Gaap
     class Dispatcher
+        @@view_directory = 'view'
+
         # @param env Rack's env
         def initialize(env)
             @request = create_request(env)
@@ -51,7 +53,10 @@ module Gaap
         #
         # @return view file directory
         def view_directory
-            'view'
+            @@view_directory
+        end
+        def self.view_directory=(view_directory)
+            @@view_directory = view_directory
         end
 
         # Get a default Content-Type for html.
