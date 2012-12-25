@@ -75,7 +75,7 @@ module Gaap
     # @return [String] rendered result
     def render(filename, params={})
       src = File.read(File.join(view_directory, filename))
-      eruby = Erubis::Eruby.new(src)
+      eruby = Erubis::FastEruby.new(src)
       html = eruby.result(params)
       return create_response(
         [html],
