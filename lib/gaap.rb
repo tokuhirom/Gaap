@@ -16,6 +16,7 @@ module Gaap
       @dispatcher = dispatcher
     end
 
+    # handler method for rack.
     def call(env)
       app = @context_class.new(env)
       res = @dispatcher.dispatch(app)
