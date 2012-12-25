@@ -93,14 +93,6 @@ module Gaap
       return res
     end
 
-    # Getter for router object.
-    # You need to implement this method in your dispatcher class.
-    #
-    # @return instance of Gaap::Router
-    def router
-      throw NotImplementedError.new("'router' is abstract method")
-    end
-
     # Create Gaap::Response object by arguments.
     # You can overwrite this method in your dispatcher class.
     #
@@ -134,10 +126,10 @@ module Gaap
   # Controller class for Gaap
   class Controller
     # @param [Gaap::Dispatcher] dispatcher instance of dispatcher
-    # @param [Hash]             args       captured arguments by router
-    def initialize(context, args)
+    # @param [Hash]             args       captured arguments by router(optional)
+    def initialize(context, args={})
       @context = context
-      @args       = args
+      @args    = args
     end
 
     attr_reader :context
