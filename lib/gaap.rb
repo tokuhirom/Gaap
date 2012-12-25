@@ -149,6 +149,7 @@ module Gaap
           create_request
           render_json
           render
+          redirect
           res_404
           res_405
     ).each do |method|
