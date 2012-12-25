@@ -37,10 +37,31 @@ module Gaap
         end
     end
 
+    class Delegator
+      def initialize(dispatcher, context_class)
+        @dispatcher    = dispatcher
+        @context_class = context_class
+      end
+
+      attr_accessor :context_class
+
+      %w(get post any).each do |meth|
+        define_method(meth) do |*args, &block|
+          @dispatcher.send(meth, *args, &block)
+        end
+      end
+    end
+
     def self.app(&block)
       dispatcher = Gaap::Lite::Dispatcher.new()
-      dispatcher.instance_eval &block
-      return Gaap::Handler.new(Gaap::Context, dispatcher)
+
+      context_class = Class.new(Gaap::Context) do
+      end
+
+      delegator = Delegator.new(dispatcher, context_class)
+      delegator.instance_eval &block
+
+      return Gaap::Handler.new(context_class, dispatcher)
     end
   end
 end

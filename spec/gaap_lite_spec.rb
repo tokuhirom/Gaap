@@ -10,9 +10,15 @@ class LiteTest < Test::Unit::TestCase
     return app
   end
 
-  def test_it_says_hello_world
+  def test_root
     get '/'
-    assert last_response.ok?
+    assert_equal 200, last_response.status
     assert_equal '{"x":"Y"}', last_response.body
+  end
+
+  def test_render
+    get '/render'
+    assert_equal 200, last_response.status
+    assert_equal "RESULT: 9\n", last_response.body
   end
 end
