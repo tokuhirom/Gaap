@@ -4,8 +4,7 @@ require 'gaap'
 
 module Gaap
   module Lite
-    def self.app(&block)
-      dispatcher_class = Class.new do
+    class Dispatcher
         def initialize
           @router = RouterSimple::Router.new
         end
@@ -36,9 +35,10 @@ module Gaap
         def any(path, &block)
           @router.register(nil, path, &block)
         end
-      end
+    end
 
-      dispatcher = dispatcher_class.new()
+    def self.app(&block)
+      dispatcher = Gaap::Lite::Dispatcher.new()
       dispatcher.instance_eval &block
       return Gaap::Handler.new(Gaap::Context, dispatcher)
     end
