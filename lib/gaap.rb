@@ -83,6 +83,10 @@ module Gaap
       )
     end
 
+    # Create 302 redirect response
+    #
+    # @param [String] url location URL
+    # @return instance of Gaap::Response
     def redirect(url)
       res = create_response()
       res.redirect(URI.join(request.url, url).to_s)
