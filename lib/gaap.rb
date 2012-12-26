@@ -38,7 +38,7 @@ module Gaap
     end
 
     def self.encode(string)
-      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string.gsub(/[&"'><]/, HTML_ENCODED))
+      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string.to_s.gsub(/[&"'><]/, HTML_ENCODED))
     end
 
     def initialize(string)
