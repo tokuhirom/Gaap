@@ -171,7 +171,7 @@ module Gaap
     # @params dat data to serialize
     # @return instance of Gaap::Response
     def render_json(dat)
-      create_response(dat.to_json(), 200, {'Content-Type' => 'application/json;charset=utf-8'})
+      create_response(JSON.generate(dat), 200, {'Content-Type' => 'application/json;charset=utf-8'})
     end
   end
 
