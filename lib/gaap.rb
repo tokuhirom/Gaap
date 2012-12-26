@@ -11,22 +11,25 @@ module Gaap
   # Handler class for rack
   class Handler
     # @param [Gaap::Dispatcher] dispatcher_class Dispatcher class object
-    def initialize(context_class, dispatcher)
-      @context_class    = context_class
-      @dispatcher = dispatcher
+    def initialize(context_class, dispatcher, container_class=Container)
+      @context_class   = context_class
+      @dispatcher      = dispatcher
+      @container_class = container_class
     end
 
     # handler method for rack.
     def call(env)
-      app = @context_class.new(env)
-      res = @dispatcher.dispatch(app)
-      if res.kind_of?(Rack::Response)
-        return res.finish()
-      elsif res.instance_of?(Array)
-        return res
-      else
-        throw "Bad response : " + res.inspect
-      end
+      @container_class.scope {
+        app = @context_class.new(env)
+        res = @dispatcher.dispatch(app)
+        if res.kind_of?(Rack::Response)
+          return res.finish()
+        elsif res.instance_of?(Array)
+          return res
+        else
+          throw "Bad response : " + res.inspect
+        end
+      }
     end
   end
 
@@ -174,6 +177,23 @@ module Gaap
     # @return instance of Gaap::Response
     def render_json(dat)
       create_response(JSON.generate(dat), 200, {'Content-Type' => 'application/json;charset=utf-8'})
+    end
+  end
+
+  class Container
+    def self.scope(&block)
+      container = nil
+      retval = nil
+      begin
+        container = self.new()
+        retval = block.()
+      ensure
+        container.destroy
+      end
+      return retval
+    end
+
+    def destroy
     end
   end
 
