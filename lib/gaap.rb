@@ -91,6 +91,8 @@ module Gaap
     attr_reader :request
     alias :req :request
 
+    attr_accessor :args
+
     # Create new request object from env
     # You can overwrite this method in your dispatcher class.
     #
@@ -175,34 +177,6 @@ module Gaap
     end
   end
 
-  # Controller class for Gaap
-  class Controller
-    # @param [Gaap::Dispatcher] dispatcher instance of dispatcher
-    # @param [Hash]             args       captured arguments by router(optional)
-    def initialize(context, args={})
-      @context = context
-      @args    = args
-    end
-
-    attr_reader :context
-    attr_reader :args
-
-    # delegate methods
-    %w(
-          create_response
-          create_request
-          render_json
-          render
-          redirect
-          res_404
-          res_405
-    ).each do |method|
-      define_method(method) do |*args|
-        @context.send(method, *args)
-      end
-    end
-  end
-
   # Request class, is a Rack::Request.
   class Request < Rack::Request
     def is_post_request
@@ -247,7 +221,8 @@ module Gaap
       dest, args, method_not_allowed = self.match(context.req.request_method, context.req.path_info)
 
       if dest
-        Controller.new(context, args).instance_eval &dest[:block]
+        context.args = args
+        context.instance_eval &dest[:block]
       elsif method_not_allowed
         return context.res_405()
       else
