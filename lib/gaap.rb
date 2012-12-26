@@ -217,13 +217,26 @@ module Gaap
   class Dispatcher
     # This method takes block.
     #
-    # router = Gaap::Router.new {
-    #    get '/',    MyApp::C::Root, :index
-    #    get '/foo', MyApp::C::Root, :foo
+    # router = Gaap::Dispatcher.new {
+    #   get '/' do
+    #     ...
+    #   end
+    #   get '/foo' do
+    #     ...
+    #   end
     # }
     def initialize(&block)
       @router = RouterSimple::Router.new()
-      self.instance_eval &block
+      if block_given?
+        self.instance_eval &block
+      end
+    end
+
+    def load_controllers(directory)
+      Dir["#{directory}/**/*.rb"].each do |f|
+        self.instance_eval File.read(f), f
+      end
+      return self # chain method
     end
 
     # Dispatch request
@@ -234,7 +247,7 @@ module Gaap
       dest, args, method_not_allowed = self.match(context.req.request_method, context.req.path_info)
 
       if dest
-        dest[:dest_class].new(context, args).send(dest[:dest_method])
+        Controller.new(context, args).instance_eval &dest[:block]
       elsif method_not_allowed
         return context.res_405()
       else
@@ -259,8 +272,8 @@ module Gaap
     # @params [String, Regexp] path        Request path pattern
     # @params [Class]          dest_class  Destination class.
     # @params [Symbol]         dest_method Destination method.
-    def get(path, dest_class, dest_method)
-      connect(['GET', 'HEAD'], path, dest_class, dest_method)
+    def get(path, &block)
+      connect(['GET', 'HEAD'], path, &block)
     end
 
     # Add a route as 'POST' only.
@@ -268,8 +281,8 @@ module Gaap
     # @params [String, Regexp] path        Request path pattern
     # @params [Class]          dest_class  Destination class.
     # @params [Symbol]         dest_method Destination method.
-    def post(path, dest_class, dest_method)
-      connect(['POST'], path, dest_class, dest_method)
+    def post(path, &block)
+      connect(['POST'], path, &block)
     end
 
     # Add a route.
@@ -278,10 +291,9 @@ module Gaap
     # @params [String, Regexp]     path              Request path pattern
     # @params [Class]              dest_class        Destination class.
     # @params [Symbol]             dest_method       Destination method.
-    def connect(http_method, path, dest_class, dest_method)
+    def connect(http_method, path, &block)
       @router.register(http_method, path, {
-        :dest_class  => dest_class,
-        :dest_method => dest_method,
+        :block       => block,
         :http_method => methods,
       })
     end
