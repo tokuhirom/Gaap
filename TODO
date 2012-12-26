@@ -1,5 +1,5 @@
 - better security for json
-- automatic html escape
+- split automatic html escape to other dist.
 - jquery support
 - fillinform support
 
