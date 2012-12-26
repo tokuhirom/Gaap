@@ -30,6 +30,57 @@ module Gaap
     end
   end
 
+  class HTMLEncodedString
+    HTML_ESCAPE = { '&' => '&amp;',  '>' => '&gt;',   '<' => '&lt;', '"' => '&quot;', "'" => '&#39;' }
+
+    def self.mark_raw(string)
+      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string)
+    end
+
+    def self.encode(string)
+      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string.gsub(/[&"'><]/, HTML_ESCAPE))
+    end
+
+    def initialize(string)
+      @string = string
+    end
+
+    def to_s
+      @string
+    end
+
+    def +(s)
+      if s.is_a?(HTMLEncodedString)
+        # HTMLEncodedString + HTMLEncodedString
+        @string += s
+      else
+        # HTMLEncodedString + String, etc.
+        throw "Do not concat HTMLEncodedString with other object. Use to_s or HTMLEncodedString.mark_raw first."
+      end
+    end
+  end
+
+  class Eruby < Erubis::Eruby
+    def add_expr(src, code, indicator)
+      case indicator
+      when '='
+        @escape ? add_expr_literal(src, code) : add_expr_escaped(src, code)
+      when '=='
+        throw "Do not use ==. Use 'mark_raw' function instead."
+      when '==='
+        add_expr_debug(src, code)
+      end
+    end
+
+    def escaped_expr(code)
+      return "Gaap::HTMLEncodedString.encode((#{code.strip})).to_s()"
+    end
+
+    def mark_raw(string)
+      Gaap::HTMLEncodedString.mark_raw(string)
+    end
+  end
+
   # Context class for Gaap
   class Context
     # @param env Rack's env
@@ -75,7 +126,7 @@ module Gaap
     # @return [String] rendered result
     def render(filename, params={})
       src = File.read(File.join(view_directory, filename))
-      eruby = Erubis::FastEruby.new(src)
+      eruby = Eruby.new(src)
       html = eruby.result(params)
       return create_response(
         [html],
