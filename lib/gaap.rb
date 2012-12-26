@@ -31,14 +31,14 @@ module Gaap
   end
 
   class HTMLEncodedString
-    HTML_ESCAPE = { '&' => '&amp;',  '>' => '&gt;',   '<' => '&lt;', '"' => '&quot;', "'" => '&#39;' }
+    HTML_ENCODED = { '&' => '&amp;',  '>' => '&gt;',   '<' => '&lt;', '"' => '&quot;', "'" => '&#39;' }
 
     def self.mark_raw(string)
       string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string)
     end
 
     def self.encode(string)
-      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string.gsub(/[&"'><]/, HTML_ESCAPE))
+      string.is_a?(HTMLEncodedString) ? string : HTMLEncodedString.new(string.gsub(/[&"'><]/, HTML_ENCODED))
     end
 
     def initialize(string)
