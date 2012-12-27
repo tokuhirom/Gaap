@@ -4,6 +4,9 @@ require 'minitest/autorun'
 require 'tmpdir'
 require 'rack'
 require 'rack/test'
+require "bundler"
+Bundler.setup
+Bundler.require
 
 class TestGaapGeneratorNormal < MiniTest::Unit::TestCase
   def test_normal

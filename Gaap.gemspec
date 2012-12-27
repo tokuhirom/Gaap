@@ -22,6 +22,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency('erubis', '~> 2.7.0')
   gem.add_dependency('json', '~> 1.7.5')
   gem.add_dependency('rack-protection')
+  gem.add_dependency('rack-test')
   gem.add_dependency('bundler')
 
   gem.add_development_dependency('httpclient')

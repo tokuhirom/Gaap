@@ -151,7 +151,7 @@ module Gaap
           run <%= proj %>::<%= type %>.handler
           EOF
 
-          write_file_heredoc("view/index.erb", <<-EOF)
+          write_file_heredoc("view/_layout.erb", <<-EOF)
           <!doctype html>
           <html>
             <head>
@@ -159,9 +159,15 @@ module Gaap
               <title>Application</title>
             </head>
             <body>
-              <h1>Application Skelton</h1>
+              <% yield %>
             </body>
           </html>
+          EOF
+
+          write_file_heredoc("view/index.erb", <<-EOF)
+          % wrapper('_layout.erb') do
+          ooo
+          % end
           EOF
 
           write_file_heredoc("controller/main.rb", render(<<-EOF, binding()))
