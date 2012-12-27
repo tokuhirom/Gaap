@@ -24,6 +24,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency('rack-protection')
   gem.add_dependency('rack-test')
   gem.add_dependency('bundler')
+  gem.add_dependency('rake', '~> 10.0.3')
 
   gem.add_development_dependency('httpclient')
 end
