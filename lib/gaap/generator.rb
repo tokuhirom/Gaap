@@ -90,20 +90,20 @@ module Gaap
       </html>
       EOF
 
-      write_jquery('static/js/')
-    end
-
-    def write_jquery(path)
-      jquery_file = jquery_filename()
-      jquery_src = File.read(jquery_file)
-      write_file(File.join(path, File.basename(jquery_file)), jquery_src)
+      copy_static_files_to('./static/')
     end
 
     def jquery_basename
       return File.basename(jquery_filename)
     end
     def jquery_filename
-      return Dir.glob(File.join(File.dirname(__FILE__), '../../resources/js/jquery-*.js'))[0]
+      return Dir.glob(File.join(File.dirname(__FILE__), '../../resources/static/js/jquery-*.js'))[0]
+    end
+    def resource_directory
+      return File.join(File.dirname(__FILE__), '../../resources/')
+    end
+    def copy_static_files_to(path)
+      FileUtils.cp_r(File.join(resource_directory, 'static'), path)
     end
 
     def run_normal(proj)
