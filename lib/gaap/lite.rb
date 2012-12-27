@@ -6,24 +6,6 @@ require 'gaap'
 
 Sample code is here.
 
-  require 'gaap/lite'
-  require 'rack/protection'
-
-  use Rack::Session::Cookie
-  use Rack::Protection
-
-  use Gaap::Lite.app do
-    context_class.class_eval do
-      def view_directory
-        'view/'
-      end
-    end
-
-    get '/' do
-      render('index.erb', {})
-    end
-  end
-
 =end
 
 module Gaap
@@ -37,8 +19,8 @@ module Gaap
           dest, args, method_not_allowed = @router.match(c.req.request_method, c.req.path_info)
 
           if dest
-            controller = Gaap::Controller.new(c, args) 
-            return controller.instance_eval &dest
+            c.args = args
+            return c.instance_eval &dest
           elsif method_not_allowed
             return c.res_405()
           else

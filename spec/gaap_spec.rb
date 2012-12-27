@@ -3,34 +3,6 @@ require 'minitest/unit'
 require 'minitest/autorun'
 
 module MyApp2
-  class C < Gaap::Controller
-  end
-
-  class C::Root < C
-    def index
-      create_response(['OK'], 200, {})
-    end
-    def json
-      render_json({:x => 'y'})
-    end
-    def create
-      render_json({:p => 'z'})
-    end
-  end
-
-  class C::Foo < C
-    def index
-      create_response(['hoge'])
-    end
-  end
-
-  class C::Tmpl < C
-    def index
-      render('index.erb', {
-      })
-    end
-  end
-
   class Context < Gaap::Context
     def router
       @@router
@@ -42,11 +14,22 @@ module MyApp2
   end
 
   @@dispatcher = Gaap::Dispatcher.new {
-    get  '/',       C::Root, :index
-    get  '/json',   C::Root, :json
-    get  '/foo/',   C::Foo,  :index
-    post '/create', C::Root, :create
-    get  '/tmpl/',  C::Tmpl, :index
+    get  '/' do
+      create_response(['OK'], 200, {})
+    end
+    get  '/json' do
+      render_json({:x => 'y'})
+    end
+    get  '/foo/' do
+      create_response(['hoge'])
+    end
+    post '/create' do
+      render_json({:p => 'z'})
+    end
+    get  '/tmpl/' do
+      render('index.erb', {
+      })
+    end
   }
   def self.dispatcher
     @@dispatcher

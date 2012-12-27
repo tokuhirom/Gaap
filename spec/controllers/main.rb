@@ -1,0 +1,1 @@
+get '/' do end

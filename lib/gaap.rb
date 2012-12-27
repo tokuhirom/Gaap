@@ -11,22 +11,25 @@ module Gaap
   # Handler class for rack
   class Handler
     # @param [Gaap::Dispatcher] dispatcher_class Dispatcher class object
-    def initialize(context_class, dispatcher)
-      @context_class    = context_class
-      @dispatcher = dispatcher
+    def initialize(context_class, dispatcher, container_class=Container)
+      @context_class   = context_class
+      @dispatcher      = dispatcher
+      @container_class = container_class
     end
 
     # handler method for rack.
     def call(env)
-      app = @context_class.new(env)
-      res = @dispatcher.dispatch(app)
-      if res.kind_of?(Rack::Response)
-        return res.finish()
-      elsif res.instance_of?(Array)
-        return res
-      else
-        throw "Bad response : " + res.inspect
-      end
+      @container_class.scope {
+        app = @context_class.new(env)
+        res = @dispatcher.dispatch(app)
+        if res.kind_of?(Rack::Response)
+          return res.finish()
+        elsif res.instance_of?(Array)
+          return res
+        else
+          throw "Bad response : " + res.inspect
+        end
+      }
     end
   end
 
@@ -90,6 +93,8 @@ module Gaap
 
     attr_reader :request
     alias :req :request
+
+    attr_accessor :args
 
     # Create new request object from env
     # You can overwrite this method in your dispatcher class.
@@ -171,35 +176,32 @@ module Gaap
     # @params dat data to serialize
     # @return instance of Gaap::Response
     def render_json(dat)
-      create_response(dat.to_json(), 200, {'Content-Type' => 'application/json;charset=utf-8'})
+      create_response(JSON.generate(dat), 200, {'Content-Type' => 'application/json;charset=utf-8'})
     end
   end
 
-  # Controller class for Gaap
-  class Controller
-    # @param [Gaap::Dispatcher] dispatcher instance of dispatcher
-    # @param [Hash]             args       captured arguments by router(optional)
-    def initialize(context, args={})
-      @context = context
-      @args    = args
+  class Container
+    @@instances = {}
+
+    def self.scope(&block)
+      container = nil
+      retval = nil
+      begin
+        container = self.new()
+        @@instances[self] = container
+        retval = block.(container)
+      ensure
+        @@instances.delete(self)
+        container.destroy
+      end
+      return retval
     end
 
-    attr_reader :context
-    attr_reader :args
+    def self.instance
+      @@instances[self]
+    end
 
-    # delegate methods
-    %w(
-          create_response
-          create_request
-          render_json
-          render
-          redirect
-          res_404
-          res_405
-    ).each do |method|
-      define_method(method) do |*args|
-        @context.send(method, *args)
-      end
+    def destroy
     end
   end
 
@@ -217,13 +219,26 @@ module Gaap
   class Dispatcher
     # This method takes block.
     #
-    # router = Gaap::Router.new {
-    #    get '/',    MyApp::C::Root, :index
-    #    get '/foo', MyApp::C::Root, :foo
+    # router = Gaap::Dispatcher.new {
+    #   get '/' do
+    #     ...
+    #   end
+    #   get '/foo' do
+    #     ...
+    #   end
     # }
     def initialize(&block)
       @router = RouterSimple::Router.new()
-      self.instance_eval &block
+      if block_given?
+        self.instance_eval &block
+      end
+    end
+
+    def load_controllers(directory)
+      Dir["#{directory}/**/*.rb"].each do |f|
+        self.instance_eval File.read(f), f
+      end
+      return self # chain method
     end
 
     # Dispatch request
@@ -234,7 +249,8 @@ module Gaap
       dest, args, method_not_allowed = self.match(context.req.request_method, context.req.path_info)
 
       if dest
-        dest[:dest_class].new(context, args).send(dest[:dest_method])
+        context.args = args
+        context.instance_eval &dest[:block]
       elsif method_not_allowed
         return context.res_405()
       else
@@ -259,8 +275,8 @@ module Gaap
     # @params [String, Regexp] path        Request path pattern
     # @params [Class]          dest_class  Destination class.
     # @params [Symbol]         dest_method Destination method.
-    def get(path, dest_class, dest_method)
-      connect(['GET', 'HEAD'], path, dest_class, dest_method)
+    def get(path, &block)
+      connect(['GET', 'HEAD'], path, &block)
     end
 
     # Add a route as 'POST' only.
@@ -268,8 +284,8 @@ module Gaap
     # @params [String, Regexp] path        Request path pattern
     # @params [Class]          dest_class  Destination class.
     # @params [Symbol]         dest_method Destination method.
-    def post(path, dest_class, dest_method)
-      connect(['POST'], path, dest_class, dest_method)
+    def post(path, &block)
+      connect(['POST'], path, &block)
     end
 
     # Add a route.
@@ -278,10 +294,9 @@ module Gaap
     # @params [String, Regexp]     path              Request path pattern
     # @params [Class]              dest_class        Destination class.
     # @params [Symbol]             dest_method       Destination method.
-    def connect(http_method, path, dest_class, dest_method)
+    def connect(http_method, path, &block)
       @router.register(http_method, path, {
-        :dest_class  => dest_class,
-        :dest_method => dest_method,
+        :block       => block,
         :http_method => methods,
       })
     end
