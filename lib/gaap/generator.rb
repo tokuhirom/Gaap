@@ -41,13 +41,13 @@ module Gaap
         exit 1
       end
       Dir::mkdir(proj)
-      Dir::chdir proj
-
-      if lite
-        run_lite(proj)
-      else
-        run_normal(proj)
-      end
+      Dir::chdir(proj) {
+        if lite
+          run_lite(proj)
+        else
+          run_normal(proj)
+        end
+      }
     end
 
     def run_lite(proj)
@@ -59,6 +59,10 @@ module Gaap
 
       use Rack::Session::Cookie
       use Rack::Protection
+
+      map '/static' do
+        run Rack::File.new(File.absolute_path('./static/'))
+      end
 
       run Gaap::Lite.app() {
         context_class.class_eval do
@@ -85,17 +89,31 @@ module Gaap
         </body>
       </html>
       EOF
+
+      write_jquery('static/js/')
+    end
+
+    def write_jquery(path)
+      jquery_file = jquery_filename()
+      jquery_src = File.read(jquery_file)
+      write_file(File.join(path, File.basename(jquery_file)), jquery_src)
+    end
+
+    def jquery_basename
+      return File.basename(jquery_filename)
+    end
+    def jquery_filename
+      return Dir.glob(File.join(File.dirname(__FILE__), '../../resources/js/jquery-*.js'))[0]
     end
 
     def run_normal(proj)
       Dir::mkdir('lib')
       Dir::mkdir('view')
-      Dir::mkdir("lib/#{proj.downcase}")
 
       %w(Admin Web).each do |type|
         write_file_heredoc("#{type.downcase}.ru", render(<<-EOF, binding))
-        $LOAD_PATH.unshift File.absolute_path('./lib')
-        require '<%= proj.downcase %>/<%= type.downcase %>'
+        $LOAD_PATH.unshift File.absolute_path(File.join(File.dirname(__FILE__), 'lib'))
+        require File.join(File.dirname(__FILE__), 'lib', '<%= type.downcase %>.rb')
 
         run <%= proj %>::<%= type %>.handler
         EOF
@@ -114,7 +132,13 @@ module Gaap
         </html>
         EOF
 
-        write_file_heredoc("lib/#{proj.downcase}/#{type.downcase}.rb", render(<<-EOF, binding()))
+        write_file_heredoc("controller/#{type.downcase}/main.rb", render(<<-EOF, binding()))
+        get '/' do
+          render('index.erb', {})
+        end
+        EOF
+
+        write_file_heredoc("lib/#{type.downcase}.rb", render(<<-EOF, binding()))
         require 'gaap'
 
         module <%= proj %>
@@ -126,23 +150,16 @@ module Gaap
               end
             end
 
-            class C; end
-
-            class C::Root < Gaap::Controller
-              def index
-                render('index.erb', {})
+            class Container < Gaap::Container
+              def destroy
+                # release resources after request.
               end
             end
 
-            @@dispatcher = Gaap::Dispatcher.new do
-              get '/', C::Root, :index
-            end
-
-            class Context < Gaap::Context
-            end
+            @@dispatcher = Gaap::Dispatcher.new.load_controllers('controller/#{type.downcase}')
 
             def self.handler
-              Gaap::Handler.new(Context, @@dispatcher)
+              Gaap::Handler.new(Context, @@dispatcher, Container)
             end
           end
         end

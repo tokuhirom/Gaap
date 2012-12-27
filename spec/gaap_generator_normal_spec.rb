@@ -7,29 +7,56 @@ require 'rack/test'
 
 class TestGaapGeneratorNormal < MiniTest::Unit::TestCase
   def test_normal
-    orig_pwd = Dir::getwd
     Dir::mktmpdir {|dir|
-      Dir.chdir dir
+      Dir.chdir(dir) {
+        Gaap::Generator.new().run(['Foo'])
 
-      Gaap::Generator.new().run(['Foo'])
+        Dir.chdir('Foo') {
+          assert File.file?('admin.ru')
+          assert File.file?('web.ru')
 
-      assert File.file?('admin.ru')
-      assert File.file?('web.ru')
+          # test admin
+          test_app = Proc.new {|ru|
+            app, option = Rack::Builder.parse_file(ru)
+            assert app
+            browser = Rack::Test::Session.new(Rack::MockSession.new(app))
+            browser.get '/'
+            assert_equal 200, browser.last_response.status
+            assert_match %r{<html>}, browser.last_response.body
+          }
 
-      # test admin
-      test_app = Proc.new {|ru|
-        app, option = Rack::Builder.parse_file(ru)
-        assert app
-        browser = Rack::Test::Session.new(Rack::MockSession.new(app))
-        browser.get '/'
-        assert_equal 200, browser.last_response.status
-        assert_match %r{<html>}, browser.last_response.body
+          test_app.('admin.ru')
+          test_app.('web.ru')
+        }
       }
+    }
+  end
 
-      test_app.('admin.ru')
-      test_app.('web.ru')
+  def test_lite
+    Dir::mktmpdir {|dir|
+      Dir.chdir(dir) {
+        generator = Gaap::Generator.new()
+        generator.run(['--lite', 'Foo'])
 
-      Dir.chdir orig_pwd # back to original
+        Dir.chdir('Foo') {
+          assert File.file?('config.ru')
+
+          # test admin
+          test_app = Proc.new {|ru|
+            app, option = Rack::Builder.parse_file(ru)
+            assert app
+            browser = Rack::Test::Session.new(Rack::MockSession.new(app))
+            browser.get '/'
+            assert_equal 200, browser.last_response.status
+            assert_match %r{<html>}, browser.last_response.body
+
+            browser.get "/static/js/#{generator.jquery_basename}"
+            assert_equal 200, browser.last_response.status
+          }
+
+          test_app.('config.ru')
+        }
+      }
     }
   end
 end
