@@ -1,11 +1,9 @@
 - better security for json
 - split automatic html escape to other dist.
-- jquery support
+- script tag for jquery
 - fillinform support
-- include jquery to distribution
 
 ## setup script
 
-- Gemfile
 - test case
 
