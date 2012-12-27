@@ -179,6 +179,11 @@ module Gaap
       return res
     end
 
+    # Get a path to location
+    def uri_for(url)
+      return URI.join(@request.url, url).to_s
+    end
+
     # Create Gaap::Response object by arguments.
     # You can overwrite this method in your dispatcher class.
     #
