@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'gaap/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = "Gaap"
+  gem.name          = "gaap"
   gem.version       = Gaap::VERSION
   gem.authors       = ["tokuhirom"]
   gem.email         = ["tokuhirom@gmail.com"]
@@ -21,6 +21,8 @@ Gem::Specification.new do |gem|
   gem.add_dependency('rack', "~> 1.4.1")
   gem.add_dependency('erubis', '~> 2.7.0')
   gem.add_dependency('json', '~> 1.7.5')
+  gem.add_dependency('rack-protection')
+  gem.add_dependency('bundler')
 
   gem.add_development_dependency('httpclient')
 end

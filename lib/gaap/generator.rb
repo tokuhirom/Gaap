@@ -53,7 +53,17 @@ module Gaap
     def run_lite(proj)
       Dir::mkdir('view/')
 
+      write_file_heredoc('Gemfile', <<-'EOF')
+      source :rubygems
+      gem 'gaap'
+      EOF
+
       write_file_heredoc('config.ru', <<-EOF)
+      require "rubygems"
+      require "bundler"
+      Bundler.setup
+      Bundler.require
+
       require 'gaap/lite'
       require 'rack/protection'
 
@@ -108,62 +118,87 @@ module Gaap
 
     def run_normal(proj)
       Dir::mkdir('lib')
-      Dir::mkdir('view')
+
+      write_file_heredoc('Gemfile', <<-'EOF')
+      source :rubygems
+      gem 'gaap'
+      EOF
 
       %w(Admin Web).each do |type|
-        write_file_heredoc("#{type.downcase}.ru", render(<<-EOF, binding))
-        $LOAD_PATH.unshift File.absolute_path(File.join(File.dirname(__FILE__), 'lib'))
-        require File.join(File.dirname(__FILE__), 'lib', '<%= type.downcase %>.rb')
+        Dir::mkdir(type.downcase)
+        Dir.chdir(type.downcase) do
+          copy_static_files_to('./static')
 
-        run <%= proj %>::<%= type %>.handler
-        EOF
+          write_file_heredoc("config.ru", render(<<-EOF, binding))
+          require "rubygems"
+          require "bundler"
+          Bundler.setup
+          Bundler.require
 
-        Dir::mkdir("view/#{type.downcase}")
-        write_file_heredoc("view/#{type.downcase}/index.erb", <<-EOF)
-        <!doctype html>
-        <html>
-          <head>
-            <met charset="utf-8">
-            <title>Application</title>
-          </head>
-          <body>
-            <h1>Application Skelton</h1>
-          </body>
-        </html>
-        EOF
+          $LOAD_PATH.unshift File.absolute_path(File.join(File.dirname(__FILE__), 'lib'))
+          $LOAD_PATH.unshift File.absolute_path(File.join(File.dirname(__FILE__), '../lib'))
+          require File.join(File.dirname(__FILE__), 'lib', '<%= type.downcase %>.rb')
 
-        write_file_heredoc("controller/#{type.downcase}/main.rb", render(<<-EOF, binding()))
-        get '/' do
-          render('index.erb', {})
-        end
-        EOF
+          require 'rack/protection'
 
-        write_file_heredoc("lib/#{type.downcase}.rb", render(<<-EOF, binding()))
-        require 'gaap'
+          use Rack::Session::Cookie
+          use Rack::Protection
 
-        module <%= proj %>
-          module <%= type %>
-            class Context < Gaap::Context
-              @@view_directory = File.absolute_path('view/<%= type.downcase %>')
-              def view_directory
-                @@view_directory
+          map '/static' do
+            run Rack::File.new(File.absolute_path('./static/'))
+          end
+
+          run <%= proj %>::<%= type %>.handler
+          EOF
+
+          write_file_heredoc("view/index.erb", <<-EOF)
+          <!doctype html>
+          <html>
+            <head>
+              <met charset="utf-8">
+              <title>Application</title>
+            </head>
+            <body>
+              <h1>Application Skelton</h1>
+            </body>
+          </html>
+          EOF
+
+          write_file_heredoc("controller/main.rb", render(<<-EOF, binding()))
+          get '/' do
+            render('index.erb', {})
+          end
+          EOF
+
+          write_file_heredoc("lib/#{type.downcase}.rb", render(<<-EOF, binding()))
+          require 'gaap'
+
+          module <%= proj %>
+            module <%= type %>
+              class Context < Gaap::Context
+                @@view_directory = File.absolute_path('view/')
+                def view_directory
+                  @@view_directory
+                end
               end
-            end
 
-            class Container < Gaap::Container
-              def destroy
-                # release resources after request.
+              class Container < Gaap::Container
+                def destroy
+                  # release resources after request.
+                end
               end
-            end
 
-            @@dispatcher = Gaap::Dispatcher.new.load_controllers('controller/#{type.downcase}')
+              @@dispatcher = Gaap::Dispatcher.new.load_controllers(
+                File.join(File.dirname(__FILE__), '../controller/')
+              )
 
-            def self.handler
-              Gaap::Handler.new(Context, @@dispatcher, Container)
+              def self.handler
+                Gaap::Handler.new(Context, @@dispatcher, Container)
+              end
             end
           end
+          EOF
         end
-        EOF
       end
     end
   end

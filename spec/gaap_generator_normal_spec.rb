@@ -9,24 +9,24 @@ class TestGaapGeneratorNormal < MiniTest::Unit::TestCase
   def test_normal
     Dir::mktmpdir {|dir|
       Dir.chdir(dir) {
-        Gaap::Generator.new().run(['Foo'])
+        generator = Gaap::Generator.new()
+        generator.run(['Foo'])
 
         Dir.chdir('Foo') {
-          assert File.file?('admin.ru')
-          assert File.file?('web.ru')
+          %w(admin web).each do |type|
+            Dir.chdir(type) do
+              assert File.file?('config.ru')
+              app, option = Rack::Builder.parse_file('config.ru')
+              assert app
+              browser = Rack::Test::Session.new(Rack::MockSession.new(app))
+              browser.get '/'
+              assert_equal 200, browser.last_response.status
+              assert_match %r{<html>}, browser.last_response.body
 
-          # test admin
-          test_app = Proc.new {|ru|
-            app, option = Rack::Builder.parse_file(ru)
-            assert app
-            browser = Rack::Test::Session.new(Rack::MockSession.new(app))
-            browser.get '/'
-            assert_equal 200, browser.last_response.status
-            assert_match %r{<html>}, browser.last_response.body
-          }
-
-          test_app.('admin.ru')
-          test_app.('web.ru')
+              browser.get "/static/js/#{generator.jquery_basename}"
+              assert_equal 200, browser.last_response.status
+            end
+          end
         }
       }
     }
