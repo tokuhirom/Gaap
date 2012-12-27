@@ -181,16 +181,24 @@ module Gaap
   end
 
   class Container
+    @@instances = {}
+
     def self.scope(&block)
       container = nil
       retval = nil
       begin
         container = self.new()
+        @@instances[self] = container
         retval = block.(container)
       ensure
+        @@instances.delete(self)
         container.destroy
       end
       return retval
+    end
+
+    def self.instance
+      @@instances[self]
     end
 
     def destroy

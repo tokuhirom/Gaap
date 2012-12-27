@@ -32,6 +32,7 @@ class TestContainer < MiniTest::Unit::TestCase
       end
     end
     ret = container_class.scope {|container|
+      assert_equal container, container_class.instance
       d1 = container.dbh
       d2 = container.dbh
       assert_equal d1, d2
