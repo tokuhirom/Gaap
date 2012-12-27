@@ -62,10 +62,7 @@ module Gaap
     def run_lite(proj)
       Dir::mkdir('view/')
 
-      write_file_heredoc('Gemfile', <<-'EOF')
-      source :rubygems
-      gem 'gaap'
-      EOF
+      run_common(proj)
 
       write_file_heredoc('config.ru', <<-EOF)
       require "rubygems"
@@ -128,13 +125,28 @@ module Gaap
       FileUtils.cp_r(File.join(resource_directory, 'static'), path)
     end
 
-    def run_normal(proj)
-      Dir::mkdir('lib')
-
+    def run_common(proj)
       write_file_heredoc('Gemfile', <<-'EOF')
       source :rubygems
       gem 'gaap'
       EOF
+
+      write_file_heredoc('Rakefile', <<-'EOF')
+      require "bundler/gem_tasks"
+      require 'rake/testtask'
+
+      Rake::TestTask.new do |t|
+        t.pattern = "spec/*_spec.rb"
+      end
+
+      task :default => :test
+      EOF
+    end
+
+    def run_normal(proj)
+      Dir::mkdir('lib')
+
+      run_common(proj)
 
       %w(Admin Web).each do |type|
         Dir::mkdir(type.downcase)

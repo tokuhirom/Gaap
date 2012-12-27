@@ -16,6 +16,7 @@ class TestGaapGeneratorNormal < MiniTest::Unit::TestCase
         generator.run(['Foo'])
 
         Dir.chdir('Foo') {
+          assert File.exists?('Rakefile')
           %w(admin web).each do |type|
             Dir.chdir(type) do
               assert File.file?('config.ru')
@@ -43,6 +44,7 @@ class TestGaapGeneratorNormal < MiniTest::Unit::TestCase
 
         Dir.chdir('Foo') {
           assert File.file?('config.ru')
+          assert File.exists?('Rakefile')
 
           # test admin
           test_app = Proc.new {|ru|
