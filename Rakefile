@@ -43,3 +43,5 @@ task :bootstrap do
 end
 
 task :resource, [:jquery, :sprintf]
+
+task :default => :test # nop
