@@ -64,6 +64,8 @@ module Gaap
   end
 
   class Eruby < Erubis::Eruby
+    include Erubis::PercentLineEnhancer
+
     def add_expr(src, code, indicator)
       case indicator
       when '='
@@ -82,6 +84,31 @@ module Gaap
     def mark_raw(string)
       Gaap::HTMLEncodedString.mark_raw(string)
     end
+
+    attr_accessor :view_directory
+    attr_accessor :params
+
+    def wrapper(filename, &block)
+      orig = @_out_buf
+      src = File.read(File.join(@view_directory, filename))
+      eruby = Eruby.new(src, :bufvar => '@_out_buf')
+      eruby._out_buf = @_out_buf
+      html = eruby.result(@params) do
+        orig = @_out_buf
+        ret = nil
+        begin
+          @_out_buf = ''
+          ret = block.()
+        ensure
+          @_out_buf = orig
+        end
+        ret
+      end
+      @_out_buf = orig + html
+    end
+
+    protected
+    attr_accessor :_out_buf
   end
 
   # Context class for Gaap
@@ -131,7 +158,9 @@ module Gaap
     # @return [String] rendered result
     def render(filename, params={})
       src = File.read(File.join(view_directory, filename))
-      eruby = Eruby.new(src)
+      eruby = Eruby.new(src, :bufvar => '@_out_buf')
+      eruby.view_directory = view_directory
+      eruby.params         = params
       html = eruby.result(params)
       return create_response(
         [html],
