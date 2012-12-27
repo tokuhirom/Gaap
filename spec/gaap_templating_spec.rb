@@ -7,14 +7,14 @@ describe Gaap do
     def view_directory
       'spec/view/'
     end
+    attr_accessor :a, :b
   end
   describe 'escape' do
     c = context_class.new({})
+    c.a = "<'"
+    c.b = "<'"
     it 'gaap' do
-      res = c.render('escape.erb', {
-        :a => "<'",
-        :b => "<'",
-      })
+      res = c.render('escape.erb')
       assert_equal res.body[0], <<-EOF.gsub(/^\s+/, '')
       A:&lt;&#39;
       B:<'
@@ -25,9 +25,8 @@ describe Gaap do
   describe 'wrapper' do
     it 'do' do
       c = context_class.new({})
-      res = c.render('wrapper.erb', {
-        :a => "XXX",
-      })
+      c.a = 'XXX'
+      res = c.render('wrapper.erb')
       assert_equal res.body[0], <<-EOF.gsub(/^\s+/, '')
       111
       AAAXXX

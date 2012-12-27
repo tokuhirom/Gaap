@@ -12,9 +12,9 @@ run Gaap::Lite.app {
   end
 
   get '/render' do
-    a=4
-    b=5
-    render('sum.erb', binding())
+    @a=4
+    @b=5
+    render('sum.erb')
   end
 }
 

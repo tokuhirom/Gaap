@@ -27,8 +27,7 @@ module MyApp2
       render_json({:p => 'z'})
     end
     get  '/tmpl/' do
-      render('index.erb', {
-      })
+      render('index.erb')
     end
   }
   def self.dispatcher
