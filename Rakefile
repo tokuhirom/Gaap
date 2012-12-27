@@ -12,7 +12,7 @@ begin
   url = 'http://code.jquery.com/jquery-1.8.3.min.js'
   basename = url.gsub(/.*\//, '')
 
-  file :refresh_jquery do
+  file :jquery do
     require 'httpclient'
     FileUtils.mkdir_p "resources/js/"
     h = HTTPClient.new
@@ -21,4 +21,4 @@ begin
   end
 end
 
-task :refresh_resource, [:refresh_jquery]
+task :resource, [:refresh]
