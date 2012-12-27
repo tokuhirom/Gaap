@@ -186,7 +186,7 @@ module Gaap
       retval = nil
       begin
         container = self.new()
-        retval = block.()
+        retval = block.(container)
       ensure
         container.destroy
       end
