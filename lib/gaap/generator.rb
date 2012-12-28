@@ -18,17 +18,8 @@ module Gaap
       write_file(path, strip_heredoc(content))
     end
 
-    class BiEruby < Erubis::Eruby
-      include Erubis::BiPatternEnhancer
-    end
-
     def render(src, params)
       Erubis::Eruby.new(src).result(params)
-    end
-
-    def birender(src, params)
-      erubis = Erubis::Eruby.new(src, :pattern=>'\[= =\]')
-      erubis.result(params)
     end
 
     def run(argv=ARGV)
@@ -88,19 +79,16 @@ module Gaap
         end
 
         get '/' do
-          render('index.erb')
+          render('index.erb', {})
         end
       }
       EOF
 
-      write_file_heredoc("view/index.erb", birender(<<-EOF, {:jquery_basename => jquery_basename()}))
+      write_file_heredoc("view/index.erb", <<-EOF)
       <!doctype html>
       <html>
         <head>
           <met charset="utf-8">
-          <script src="<% uri_for('/static/js/[= jquery_basename =].js') %>"></script>
-          <script src="<% uri_for('/static/js/micro-location.js') %>"></script>
-          <link href="<% uri_for('/static/bootstrap/css/bootstrap.css') %>" rel="stylesheet" type="text/css" />
           <title>Application</title>
         </head>
         <body>
@@ -196,7 +184,7 @@ module Gaap
 
           write_file_heredoc("controller/main.rb", render(<<-EOF, binding()))
           get '/' do
-            render('index.erb')
+            render('index.erb', {})
           end
           EOF
 

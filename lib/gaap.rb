@@ -84,6 +84,31 @@ module Gaap
     def mark_raw(string)
       Gaap::HTMLEncodedString.mark_raw(string)
     end
+
+    attr_accessor :view_directory
+    attr_accessor :params
+
+    def wrapper(filename, &block)
+      orig = @_out_buf
+      src = File.read(File.join(@view_directory, filename))
+      eruby = Eruby.new(src, :bufvar => '@_out_buf')
+      eruby._out_buf = @_out_buf
+      html = eruby.result(@params) do
+        orig = @_out_buf
+        ret = nil
+        begin
+          @_out_buf = ''
+          ret = block.()
+        ensure
+          @_out_buf = orig
+        end
+        ret
+      end
+      @_out_buf = orig + html
+    end
+
+    protected
+    attr_accessor :_out_buf
   end
 
   # Context class for Gaap
@@ -114,9 +139,6 @@ module Gaap
     def view_directory
       'view'
     end
-    def mark_raw(string)
-      Gaap::HTMLEncodedString.mark_raw(string)
-    end
 
     # Get a default Content-Type for html.
     # You can overwrite this method in your dispatcher class.
@@ -134,49 +156,17 @@ module Gaap
     # @param [String] filename template file name in view_directory.
     # @param [Hash]   params   parameters. You can use Kernel#binding.
     # @return [String] rendered result
-    def render(filename)
+    def render(filename, params={})
       src = File.read(File.join(view_directory, filename))
       eruby = Eruby.new(src, :bufvar => '@_out_buf')
-      html = self.instance_eval do
-        eval(eruby.src, binding(), filename)
-      end
+      eruby.view_directory = view_directory
+      eruby.params         = params
+      html = eruby.result(params)
       return create_response(
         [html],
         200,
         {'Content-Type' => html_content_type()}
       )
-    end
-
-    @@_wrapper_block_counter = 0
-    def wrapper_block(&block)
-      @@_wrapper_block_counter += 1
-      begin
-        retval = block.('@_out_buf_inner' + @@_wrapper_block_counter.to_s)
-      ensure
-        @@_wrapper_block_counter -= 1
-      end
-      return retval
-    end
-
-    def wrapper(_filename, &_block)
-      wrapper_block {|_bufvar|
-        _src = File.read(File.join(view_directory, _filename))
-        _eruby = Eruby.new(_src, :bufvar => _bufvar)
-        # eruby._out_buf = @_out_buf
-        # eruby.params = @params
-        # eruby.view_directory = @view_directory
-        _orig = @_out_buf
-        _html = self.instance_eval do
-          _orig = @_out_buf
-          begin
-            @_out_buf = ''
-            eval(_eruby.src, binding(), _filename)
-          ensure
-            @_out_buf = _orig
-          end
-        end
-        @_out_buf = _orig + _html
-      }
     end
 
     # Create 302 redirect response

@@ -17,7 +17,7 @@ module MyApp3
       when '/res_404'
         c.res_404()
       when '/render'
-        c.render('index.erb')
+        c.render('index.erb', binding())
       when '/redirect_relative'
         c.redirect('/foo')
       when '/redirect_absolute'
