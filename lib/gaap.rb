@@ -80,6 +80,10 @@ module Gaap
     def escaped_expr(code)
       return "Gaap::HTMLEncodedString.encode((#{code.strip})).to_s()"
     end
+
+    def mark_raw(string)
+      Gaap::HTMLEncodedString.mark_raw(string)
+    end
   end
 
   # Context class for Gaap
